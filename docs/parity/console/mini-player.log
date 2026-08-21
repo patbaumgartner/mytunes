@@ -1,0 +1,6 @@
+documentPictureInPicture present; after click status=Ambient / Generated
+[error] SLF4J(W): No SLF4J providers were found.
+[error] SLF4J(W): Defaulting to no-operation (NOP) logger implementation
+[error] SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
+[log] [mytunes] Spring Boot 4.1.1 started in the browser in 227ms with 57 beans
+[log] [mytunes] interface ready
