@@ -66,7 +66,7 @@ RUN mkdir -p /site \
 # There is deliberately no JVM, no Spring Boot and no application code in this image: the entire
 # application is inside mytunes.js.wasm and executes in the visitor's browser.
 # ------------------------------------------------------------------------------------------------
-FROM nginxinc/nginx-unprivileged:1.29-alpine AS runtime
+FROM nginxinc/nginx-unprivileged:1.30-alpine AS runtime
 
 USER root
 COPY --from=build /site/ /usr/share/nginx/html/
