@@ -3,7 +3,6 @@ package com.patbaumgartner.mytunes.platform;
 import java.util.function.Consumer;
 
 import org.graalvm.webimage.api.JSObject;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 /**
@@ -27,8 +26,6 @@ import org.springframework.stereotype.Service;
 public class PictureInPictureBridge {
 
 	private final Dom dom;
-
-	private @Nullable JSObject pipDocument;
 
 	public PictureInPictureBridge(Dom dom) {
 		this.dom = dom;
@@ -61,7 +58,6 @@ public class PictureInPictureBridge {
 
 	private void adopt(JSObject pipWindow, Consumer<JSObject> build) {
 		JSObject document = Js.object(pipWindow, "document");
-		this.pipDocument = document;
 		copyStylesheets(document);
 		build.accept(Js.object(document, "body"));
 	}
@@ -76,10 +72,6 @@ public class PictureInPictureBridge {
 		Js.set(link, "rel", "stylesheet");
 		Js.set(link, "href", "styles.css");
 		Js.call(Js.object(document, "head"), "appendChild", link);
-	}
-
-	public boolean isOpen() {
-		return this.pipDocument != null;
 	}
 
 	public Dom dom() {

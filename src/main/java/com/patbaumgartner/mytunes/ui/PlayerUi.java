@@ -1,7 +1,6 @@
 package com.patbaumgartner.mytunes.ui;
 
 import com.patbaumgartner.mytunes.persistence.Preferences;
-import com.patbaumgartner.mytunes.player.PlaybackStatus;
 import com.patbaumgartner.mytunes.player.PlayerState;
 import com.patbaumgartner.mytunes.platform.AudioElement;
 import com.patbaumgartner.mytunes.platform.Dom;
@@ -263,17 +262,13 @@ public class PlayerUi {
 
 	private void toggleHidden(JSObject panel, JSObject trigger) {
 		boolean hidden = Js.get(panel, "hidden") instanceof org.graalvm.webimage.api.JSBoolean flag && flag.asBoolean();
-		Js.set(panel, "hidden", !hidden ? true : false);
+		Js.set(panel, "hidden", !hidden);
 		this.dom.attribute(trigger, "aria-expanded", hidden ? "true" : "false");
 	}
 
 	private void closeStationMenu() {
 		Js.set(view().stationMenu, "hidden", true);
 		this.dom.attribute(view().stationButton, "aria-expanded", "false");
-	}
-
-	PlaybackStatus status() {
-		return this.player.status();
 	}
 
 }

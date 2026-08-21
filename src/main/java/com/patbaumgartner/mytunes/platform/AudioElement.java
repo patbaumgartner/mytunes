@@ -51,10 +51,6 @@ public final class AudioElement {
 		return Js.getBoolean(this.element, "paused", true);
 	}
 
-	public double volume() {
-		return Js.getDouble(this.element, "volume", 1.0);
-	}
-
 	public void volume(double value) {
 		Js.set(this.element, "volume", Math.clamp(value, 0.0, 1.0));
 	}
@@ -63,20 +59,8 @@ public final class AudioElement {
 		Js.set(this.element, "muted", value);
 	}
 
-	public boolean muted() {
-		return Js.getBoolean(this.element, "muted", false);
-	}
-
-	public double currentTime() {
-		return Js.getDouble(this.element, "currentTime", 0.0);
-	}
-
 	public void on(String event, Consumer<JSObject> listener) {
 		Js.call(this.element, "addEventListener", event, listener);
-	}
-
-	public JSObject element() {
-		return this.element;
 	}
 
 }
