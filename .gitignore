@@ -1,0 +1,11 @@
+target/
+*.class
+.mvn/wrapper/maven-wrapper.jar
+node_modules/
+
+# Build logs are noise, but captured browser-console evidence under docs/ is a deliverable.
+*.log
+!docs/**/*.log
+
+# Eclipse/JDT default output folder. It mirrors the whole project and must never be committed.
+bin/

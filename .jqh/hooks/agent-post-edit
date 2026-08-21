@@ -1,0 +1,28 @@
+#!/bin/sh
+# Java Quality Harness agent hook.
+#
+# Intended to be invoked by a coding agent after it edits or generates code. Runs the
+# fast tier, scoped to the files that changed, and prints the remediation prompt so
+# the agent can act on it in the same turn.
+#
+# Usage:  .jqh/hooks/agent-post-edit [changed-file ...]
+set -eu
+
+MVN="./mvnw"
+[ -x "$MVN" ] || MVN="mvn"
+
+if [ "$#" -gt 0 ]; then
+  CHANGED=$(printf '%s,' "$@" | sed 's/,$//')
+else
+  CHANGED=$(git diff --name-only HEAD 2>/dev/null | paste -sd, - || true)
+fi
+
+set +e
+"$MVN" -q -B jqh:check -Djqh.tier=fast -Djqh.changed="$CHANGED"
+STATUS=$?
+set -e
+
+if [ -f target/jqh/jqh-agent-prompt.md ]; then
+  cat target/jqh/jqh-agent-prompt.md
+fi
+exit "$STATUS"

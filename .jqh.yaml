@@ -1,0 +1,50 @@
+# Java Quality Harness configuration for myTunes.
+#
+# Only deliberate deviations from the harness defaults are listed. Everything omitted keeps the
+# default policy. Each override states why it exists, because a gate that is quietly loosened is
+# worse than one that is absent.
+version: 1
+
+java:
+  # The application is compiled by GraalVM Web Image, which targets Java 25.
+  supported: [21, 25]
+
+dependencies:
+  # The harness itself is not yet released to Maven Central, so its test-support helper is only
+  # available as a snapshot. Scoped to the harness coordinates alone.
+  allowedSnapshots: ["com.patbaumgartner:*"]
+
+exemptions:
+  # JaCoCo reports 0% for these classes because they can only run inside a browser: each holds a
+  # live DOM node, an HTMLAudioElement or navigator.mediaSession, and the code executes as
+  # WebAssembly where no Java agent exists. They are not unverified. MyTunesBrowserTests drives
+  # every one of them through Chromium against the built Wasm image, which the project treats as
+  # the authoritative evidence, and docs/parity records the result.
+  #
+  # coverage.excludes would be the natural way to say this, but the harness parses that key
+  # without consuming it in any check, so an exemption is used instead. The domain these classes
+  # delegate to is deliberately not exempt and is held to the full default thresholds.
+  - ruleId: class-coverage
+    paths:
+      - "src/main/java/com/patbaumgartner/mytunes/platform/**"
+      - "src/main/java/com/patbaumgartner/mytunes/ui/**"
+      - "src/main/java/com/patbaumgartner/mytunes/wasm/**"
+      - "src/main/java/com/patbaumgartner/mytunes/MyTunesApplication.java"
+    reason: "Browser-only code. Not measurable by JaCoCo because it runs as WebAssembly; verified by MyTunesBrowserTests in a real browser instead."
+    approvedBy: "patbaumgartner"
+    expires: 2026-12-31
+  - ruleId: aggregate-coverage
+    paths: ["."]
+    reason: "The aggregate is dominated by the browser-only classes above, which JaCoCo cannot instrument. JVM-testable domain code (stations, player, persistence, themes) remains under the full default thresholds."
+    approvedBy: "patbaumgartner"
+    expires: 2026-12-31
+  # Capturing the DevTunes FM reference screenshots means loading the live site, so this test is
+  # network-dependent by definition: the goal requires comparing myTunes against the real original,
+  # and a local fake would defeat the purpose. It is opt-in (-Dmytunes.captureOriginal=true) and
+  # skips by default, so the ordinary build stays offline and deterministic. No other test in this
+  # repository reaches the network.
+  - ruleId: uncontrolled-network
+    paths: ["src/test/java/com/patbaumgartner/mytunes/browser/OriginalSiteCaptureTests.java"]
+    reason: "Captures the live reference site the parity checklist compares against. Opt-in and skipped by default."
+    approvedBy: "patbaumgartner"
+    expires: 2026-12-31
