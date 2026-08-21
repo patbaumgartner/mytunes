@@ -1,0 +1,143 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  GRAALVM_URL: https://download.oracle.com/graalvm/25/archive/graalvm-jdk-25.0.4_linux-x64_bin.tar.gz
+  GRAALVM_SHA256: 76007c309f821aaf435bce63162ea0395587fc77350801c81643fe7feea37276
+
+jobs:
+  jvm-tests:
+    name: Format and JVM tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Cache Oracle GraalVM
+        id: graalvm-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/graalvm
+          key: graalvm-jdk-25.0.4-linux-x64
+
+      - name: Install Oracle GraalVM
+        if: steps.graalvm-cache.outputs.cache-hit != 'true'
+        run: |
+          curl -fsSL "$GRAALVM_URL" -o /tmp/graalvm.tar.gz
+          echo "$GRAALVM_SHA256  /tmp/graalvm.tar.gz" | sha256sum -c -
+          mkdir -p ~/graalvm
+          tar -xzf /tmp/graalvm.tar.gz -C ~/graalvm --strip-components=1
+
+      - name: Use Oracle GraalVM
+        run: |
+          echo "JAVA_HOME=$HOME/graalvm" >> "$GITHUB_ENV"
+          echo "$HOME/graalvm/bin" >> "$GITHUB_PATH"
+
+      - name: Cache Maven repository
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('pom.xml') }}
+          restore-keys: maven-
+
+      # The browser interop API ships only as a GraalVM JDK module; this repackages it as the
+      # Maven artifact the build consumes.
+      - name: Install the Web Image interop API
+        run: ./tools/install-webimage-api.sh
+
+      - name: Validate formatting and run the JVM suite
+        run: ./mvnw -B spring-javaformat:validate test
+
+  container:
+    name: Container build and browser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Self-contained: the build stage downloads its own pinned GraalVM and Binaryen.
+      - name: Build the image
+        run: docker build -t mytunes:ci .
+
+      - name: Start the container
+        run: |
+          docker run -d --name mytunes -p 8099:8080 mytunes:ci
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8099/healthz && exit 0
+            sleep 2
+          done
+          echo "Container never became healthy" >&2
+          docker logs mytunes >&2
+          exit 1
+
+      - name: Cache Oracle GraalVM
+        id: graalvm-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/graalvm
+          key: graalvm-jdk-25.0.4-linux-x64
+
+      - name: Install Oracle GraalVM
+        if: steps.graalvm-cache.outputs.cache-hit != 'true'
+        run: |
+          curl -fsSL "$GRAALVM_URL" -o /tmp/graalvm.tar.gz
+          echo "$GRAALVM_SHA256  /tmp/graalvm.tar.gz" | sha256sum -c -
+          mkdir -p ~/graalvm
+          tar -xzf /tmp/graalvm.tar.gz -C ~/graalvm --strip-components=1
+
+      - name: Use Oracle GraalVM
+        run: |
+          echo "JAVA_HOME=$HOME/graalvm" >> "$GITHUB_ENV"
+          echo "$HOME/graalvm/bin" >> "$GITHUB_PATH"
+
+      - name: Cache Maven repository
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('pom.xml') }}
+          restore-keys: maven-
+
+      - name: Install the Web Image interop API
+        run: ./tools/install-webimage-api.sh
+
+      - name: Install Playwright Chromium
+        run: >
+          ./mvnw -B -q org.codehaus.mojo:exec-maven-plugin:3.5.0:java
+          -Dexec.mainClass=com.microsoft.playwright.CLI
+          -Dexec.classpathScope=test
+          -Dexec.args='install --with-deps chromium'
+
+      - name: Run browser and container smoke tests against the image
+        run: >
+          ./mvnw -B test -Dsurefire.excludes=
+          -Dtest='MyTunesBrowserTests,MiniPlayerBrowserTests,DockerSmokeTests'
+          -DfailIfNoTests=false
+          -Dmytunes.baseUrl=http://127.0.0.1:8099
+          -Dmytunes.dockerImage=mytunes:ci
+
+      - name: Container logs
+        if: failure()
+        run: docker logs mytunes
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: parity-evidence
+          path: docs/parity/
+          if-no-files-found: ignore
