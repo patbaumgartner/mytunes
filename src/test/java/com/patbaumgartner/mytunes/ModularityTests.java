@@ -1,6 +1,5 @@
 package com.patbaumgartner.mytunes;
 
-import com.patbaumgartner.jqh.test.JqhViolations;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModules;
 import org.springframework.modulith.core.Violations;
@@ -24,7 +23,6 @@ class ModularityTests {
 		Violations violations = modules.detectViolations();
 
 		// Then
-		JqhViolations.record("modulith", violations.getMessages());
 		assertThat(violations.getMessages()).isEmpty();
 	}
 

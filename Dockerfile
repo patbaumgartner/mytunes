@@ -50,10 +50,10 @@ COPY tools/install-webimage-api.sh tools/
 # so without this the build cannot resolve org.graalvm.webimage:webimage-api.
 RUN chmod +x tools/install-webimage-api.sh && ./tools/install-webimage-api.sh
 
-RUN ./mvnw -B -q dependency:go-offline -Dmaven.test.skip=true -DskipQualityDeps || true
+RUN ./mvnw -B -q dependency:go-offline -Dmaven.test.skip=true || true
 
 COPY src/ src/
-RUN ./mvnw -B -Pnative native:compile -Dmaven.test.skip=true -DskipQualityDeps
+RUN ./mvnw -B -Pnative native:compile -Dmaven.test.skip=true
 
 # The served site is the static shell plus the generated loader and Wasm module. Nothing else.
 RUN mkdir -p /site \

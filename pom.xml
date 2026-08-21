@@ -20,10 +20,8 @@
     by GraalVM Web Image and executes client side. There is no server side Spring application.</description>
 
   <properties>
-    <archunit.version>1.4.2</archunit.version>
     <graalvm.version>25.0.4</graalvm.version>
     <java.version>25</java.version>
-    <jqh.version>1.0.0-SNAPSHOT</jqh.version>
     <jspecify.version>1.0.1</jspecify.version>
     <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
     <!--
@@ -101,7 +99,7 @@
       org.graalvm.webimage.api and has no Maven coordinates, so tools/install-webimage-api.sh
       repackages it into the local repository. Consuming it from the classpath rather than with
       javac's add-modules is what lets this build keep a single release-based compiler
-      configuration that Spring Boot's AOT step and the quality harness can both reuse.
+      configuration that Spring Boot's AOT step can reuse.
     -->
     <dependency>
       <groupId>org.graalvm.webimage</groupId>
@@ -127,6 +125,18 @@
       <artifactId>spring-modulith-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.microsoft.playwright</groupId>
+      <artifactId>playwright</artifactId>
+      <version>${playwright.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.enofex</groupId>
+      <artifactId>taikai</artifactId>
+      <version>${taikai.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -143,7 +153,7 @@
             by MyTunesBrowserTests against a real browser.
 
             The domain they delegate to (stations, player, persistence, themes) is deliberately
-            not excluded and is held to the harness's full default thresholds.
+            not excluded and is fully unit tested on the JVM.
           -->
           <excludes>
             <exclude>com/patbaumgartner/mytunes/platform/**</exclude>
@@ -192,50 +202,26 @@
       </plugin>
     </plugins>
   </build>
+  <url>https://github.com/patbaumgartner/mytunes</url>
 
-  <profiles>
-    <!--
-      The quality harness is not yet on Maven Central, so a clean container cannot resolve it.
-      The Docker image needs only the Wasm artifact, never the tests, and disables this profile
-      with -DskipQualityDeps. Activation by absent property is used rather than activeByDefault,
-      because activeByDefault is switched off as soon as another profile is named with -P.
-    -->
-    <profile>
-      <id>quality</id>
-      <activation>
-        <property>
-          <name>!skipQualityDeps</name>
-        </property>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>com.microsoft.playwright</groupId>
-          <artifactId>playwright</artifactId>
-          <version>${playwright.version}</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>com.patbaumgartner</groupId>
-          <artifactId>jqh-test-support</artifactId>
-          <version>${jqh.version}</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>com.enofex</groupId>
-          <artifactId>taikai</artifactId>
-          <version>${taikai.version}</version>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.patbaumgartner</groupId>
-            <artifactId>jqh-maven-plugin</artifactId>
-            <version>${jqh.version}</version>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
+  <licenses>
+    <license>
+      <name>Apache-2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>patbaumgartner</id>
+      <name>Patrick Baumgartner</name>
+      <url>https://github.com/patbaumgartner</url>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/patbaumgartner/mytunes.git</connection>
+    <developerConnection>scm:git:git@github.com:patbaumgartner/mytunes.git</developerConnection>
+    <url>https://github.com/patbaumgartner/mytunes</url>
+  </scm>
 </project>

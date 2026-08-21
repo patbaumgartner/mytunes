@@ -4,8 +4,8 @@
 # org.graalvm.webimage.api ships only as a JDK module inside Oracle GraalVM and has no Maven
 # coordinates. Reaching it with javac's "add-modules" would force this project off the "release"
 # flag, because "release" resolves against ct.sym and cannot see a non-standard module. Every tool
-# that forks its own compiler then diverges: Spring Boot's AOT processing and the quality harness
-# both derive "release" from the same configuration and would fail.
+# that forks its own compiler then diverges: Spring Boot's AOT processing derives "release" from
+# the same configuration and would fail.
 #
 # Installing it as a normal jar keeps one consistent compiler configuration across the whole build.
 # Classpath entries are unaffected by "release".

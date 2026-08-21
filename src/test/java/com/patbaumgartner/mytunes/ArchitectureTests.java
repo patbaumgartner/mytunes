@@ -1,9 +1,6 @@
 package com.patbaumgartner.mytunes;
 
-import java.nio.file.Path;
-
 import com.enofex.taikai.Taikai;
-import com.patbaumgartner.jqh.test.JqhViolations;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.Test;
@@ -14,11 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Architecture and Spring convention verification.
  * <p>
  * Uses {@code checkAll()} so one run reports every violation instead of stopping at the
- * first, and records the aggregated message for the harness to normalise.
+ * first.
  */
 class ArchitectureTests {
-
-	private static final Path REPORT = Path.of("target", "jqh", "taikai-violations.txt");
 
 	/**
 	 * Spring Boot's AOT step writes {@code __BeanDefinitions} and similar classes next to
@@ -54,8 +49,7 @@ class ArchitectureTests {
 		String failure = capture(taikai);
 
 		// Then
-		JqhViolations.recordAggregated("taikai", failure);
-		assertThat(failure).as("Taikai architecture violations, see %s", REPORT).isEmpty();
+		assertThat(failure).as("Taikai architecture violations").isEmpty();
 	}
 
 	private static String capture(final Taikai taikai) {
