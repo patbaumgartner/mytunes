@@ -1,0 +1,43 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what happened instead?
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      description: myTunes runs entirely in the browser, so this matters most.
+      placeholder: e.g. Chromium 131, Firefox 133, Safari 18
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where did it go wrong?
+      options:
+        - Running in the browser (playback, UI, persistence)
+        - Building the Wasm image (native:compile)
+        - Docker image build or serving
+        - JVM test suite
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: console
+    attributes:
+      label: Browser console output
+      description: Open DevTools and paste anything from the console, especially `[mytunes]` lines.
+      render: text
+  - type: textarea
+    id: environment
+    attributes:
+      label: Build environment (only for build problems)
+      description: OS, GraalVM version (`java -version`), Binaryen version (`wasm-as --version`).
+      render: text

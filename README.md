@@ -1,5 +1,9 @@
 # myTunes
 
+[![CI](https://github.com/patbaumgartner/mytunes/actions/workflows/ci.yml/badge.svg)](https://github.com/patbaumgartner/mytunes/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/patbaumgartner/mytunes/actions/workflows/codeql.yml/badge.svg)](https://github.com/patbaumgartner/mytunes/actions/workflows/codeql.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 A radio player inspired by [DevTunes FM](https://radio.madza.dev/), built to answer one question:
 
 > Can a complete Spring Boot application — the framework, the domain, **and the user interface** —
@@ -21,7 +25,7 @@ container that serves it holds no JVM and no jar.
 - [What this is](#what-this-is) · [Why Java to WebAssembly](#why-java-to-webassembly)
 - [Architecture](#architecture) · [Modules](#modules) · [The zero-JavaScript rule](#the-zero-javascript-rule)
 - [Prerequisites](#prerequisites) · [Build from a clean clone](#build-from-a-clean-clone) · [Docker](#docker)
-- [Tests](#tests) · [Quality harness](#quality-harness) · [Parity evidence](#parity-evidence)
+- [Tests](#tests) · [Parity evidence](#parity-evidence)
 - [Stored data](#stored-data) · [Stations and streams](#stations-and-streams) · [Artwork](#artwork)
 - [Browser support](#browser-support) · [Mobile](#mobile) · [Media Session and mini player](#media-session-and-mini-player)
 - [GraalVM Web Image: status and limits](#graalvm-web-image-status-and-limits) · [Known issues](#known-issues)
@@ -118,7 +122,6 @@ attribute.
 | **Oracle GraalVM 25.0.4** | Required, not a preference. It is the only JDK that ships the Wasm backend (`lib/svm/tools/svm-wasm`) and the browser interop module. GraalVM CE has the API but **not** the backend. `sdk install java 25.0.4-graal` |
 | **Binaryen 119+** | Web Image assembles output with `wasm-as`, which must be on `PATH` |
 | **Docker** | Only for the container build |
-| **Java Quality Harness** | Not yet on Maven Central; clone and `./mvnw install -DskipTests` |
 
 ## Build from a clean clone
 
@@ -127,7 +130,7 @@ export JAVA_HOME=/path/to/graalvm-jdk-25.0.4
 export PATH="$JAVA_HOME/bin:/path/to/binaryen/bin:$PATH"
 
 # One-time bootstrap. Repackages GraalVM's browser interop module as a Maven artifact so the
-# whole build, Spring Boot's AOT step and the quality harness share one compiler configuration.
+# whole build and Spring Boot's AOT step share one compiler configuration.
 ./tools/install-webimage-api.sh
 
 ./mvnw -B -Pnative native:compile      # produces target/mytunes.js and target/mytunes.js.wasm
@@ -166,7 +169,7 @@ The suite is layered. Everything that can be verified without a browser is, and 
 cannot is verified in one.
 
 ```sh
-./mvnw -B test        # 40 JVM tests
+./mvnw -B test        # 39 JVM tests
 ```
 
 | Layer | Covers |
@@ -174,7 +177,7 @@ cannot is verified in one.
 | Unit | Player state machine, versioned persistence, station and background catalogues |
 | Spring context | `PlayerModuleIntegrationTests` refreshes a real context for the `player` module and its declared dependencies with `@ApplicationModuleTest`, proving the module boundaries are sufficient off-browser |
 | Modularity | `ModularityTests` — Spring Modulith `detectViolations()` |
-| Architecture | `ArchitectureTests` — Taikai, recorded for the harness |
+| Architecture | `ArchitectureTests` — Taikai conventions over the authored classes |
 | Constraint | `NoHandwrittenJavaScriptTests` — the zero-JavaScript rule |
 
 Browser tests are **authoritative**, because the application only ever executes in a browser. They
@@ -207,50 +210,23 @@ Module size and startup timing are recorded to `docs/parity/console/wasm-diagnos
 browser run:
 
 ```
-wallClockToInterfaceReadyMs=1008
-springStartup=[mytunes] Spring Boot 4.1.1 started in the browser in 240ms with 57 beans
-mytunes.js.wasm=30003411 bytes
+springStartup=[mytunes] Spring Boot 4.1.1 started in the browser in 238ms with 57 beans
+mytunes.js.wasm=30023145 bytes
 mytunes.js=96732 bytes
 ```
 
-## Quality harness
-
-[java-quality-harness](https://github.com/patbaumgartner/java-quality-harness) is the definition of
-done. Install it once, then:
-
-```sh
-./mvnw clean                               # see the note below
-./mvnw jqh:check -Djqh.tier=pre-commit     # the gate
-./mvnw jqh:fix                             # apply every safe automatic fix
-```
-
-Run the gate on a clean tree. A preceding native build leaves Spring Boot's AOT-generated
-bean-definition classes in `target/classes`, and those are build output rather than authored
-code: forbidden-apis cannot resolve their references and reports a scan error, and Taikai would
-hold them to this project's conventions. That matches the harness's own principle that it never
-grades output left behind by an earlier command.
-
-**Current result: 0 blocking findings.** format, nullness, nullness-contract, checkstyle, PMD,
-SpotBugs, forbidden-apis, dependency-convergence, dependency-policy, tests, test-hygiene,
-secret-scan, java-version, configuration, architecture and modularity all pass.
-
-Two mandatory checks still report a failure, and both are left visible rather than tuned away. The
-harness suppresses an exempted *finding* but deliberately keeps the *check* red, so an exemption can
-never make a mandatory check look clean — which is why the verdict is non-zero while blocking
-findings are zero.
-
-| Check | Why it cannot pass | Recorded as |
-| --- | --- | --- |
-| `coverage` | JaCoCo instruments JVM bytecode. The `platform`, `ui` and `wasm` classes execute as WebAssembly, where no Java agent exists, so they measure 0% at any threshold. They are verified in a real browser instead | Scoped, owned, expiring exemption in `.jqh.yaml`. The domain they delegate to is held to the full default thresholds |
-| `test-hygiene` | `OriginalSiteCaptureTests` loads the live DevTunes FM site, which is network-dependent by definition. A local fake would defeat the purpose of a parity reference. It is opt-in and skips by default | Same mechanism. No other test in this repository reaches the network |
+Coverage note, stated plainly: JaCoCo instruments JVM bytecode, and the `platform`, `ui` and
+`wasm` classes execute only as WebAssembly where no Java agent exists, so they are excluded from
+instrumentation and verified in a real browser instead. The domain they delegate to (stations,
+player, persistence, themes) is fully unit tested on the JVM.
 
 ## Parity evidence
 
 Screenshots at four fixed breakpoints for both the original and myTunes, console logs, and a
 feature-by-feature checklist with a verdict and named evidence for every row:
 
-- [`docs/parity/parity-checklist.md`](docs/parity/parity-checklist.md) — 27 PASS, 2 PARTIAL, 1 BLOCKED
-- `docs/parity/original/`, `docs/parity/mytunes/`, `docs/parity/console/`
+- [docs/parity/parity-checklist.md](docs/parity/parity-checklist.md) — 30 PASS · 2 PARTIAL · 1 BLOCKED · 2 DIVERGES
+- [`docs/parity/original/`](docs/parity/original/), [`docs/parity/mytunes/`](docs/parity/mytunes/), [`docs/parity/console/`](docs/parity/console/)
 
 Reproduction commands are at the end of the checklist. Breakpoints are `desktop-wide` 1920×1080,
 `desktop-standard` 1440×900, `mobile-portrait` 390×844, `mobile-small` 360×640.
@@ -367,10 +343,13 @@ Web Image is **experimental**. Limits that shaped this code, all found by buildi
   titles are not obtainable. The station name and genre are shown instead; `PlayerState.nowPlaying`
   is in place for when a source exists.
 - **SomaFM stations return 403 in a browser.** See [Stations and streams](#stations-and-streams).
-- **`coverage` cannot pass.** See [Quality harness](#quality-harness).
 - **Module size is untuned** at ~30 MB uncompressed.
-- **Maven coordinate spelling.** The brief contained both `com.patbaumgartner` and, once,
-  `com.patbaumagartner`. `com.patbaumgartner` was confirmed as correct and is used throughout.
+
+## Contributing
+
+Contributions are welcome — read [CONTRIBUTING.md](CONTRIBUTING.md) for the toolchain, the build
+commands CI actually runs, and the one rule that is different here (no hand-written JavaScript).
+Security reports go through [SECURITY.md](SECURITY.md), never public issues.
 
 ## Licence
 
