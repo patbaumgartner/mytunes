@@ -1,53 +1,34 @@
 package com.patbaumgartner.mytunes.player;
 
 import com.patbaumgartner.mytunes.persistence.InMemoryKeyValueStore;
-import com.patbaumgartner.mytunes.persistence.KeyValueStore;
 import com.patbaumgartner.mytunes.persistence.Preferences;
+import com.patbaumgartner.mytunes.persistence.PreferencesStore;
+import com.patbaumgartner.mytunes.stations.StationCatalogue;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.modulith.test.ApplicationModuleTest;
-import org.springframework.modulith.test.ApplicationModuleTest.BootstrapMode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Refreshes a real Spring application context for the player module on a plain JVM.
+ * Wires the player module with its real collaborators on a plain JVM, exactly as
+ * {@code MyTunesApplication.main} does in the browser.
  * <p>
- * The full application context cannot be started outside a browser, because the platform
- * module's beans hold live DOM, audio and {@code localStorage} references. Bootstrapping
- * one module and its declared dependencies is the part that <em>is</em> supported
- * off-browser, and it verifies what the browser tests cannot isolate: that the declared
- * module dependencies are sufficient, that component scanning finds these beans, and that
- * constructor injection wires them.
+ * The full object graph cannot be built outside a browser, because the platform module's
+ * classes hold live DOM, audio and {@code localStorage} references. Wiring one module and
+ * its dependencies is the part that <em>is</em> supported off-browser, and it verifies
+ * what the browser tests cannot isolate: that the module's collaborators are sufficient
+ * and that the constructors compose.
  * <p>
  * The storage abstraction is satisfied by an in-memory implementation, which is exactly
  * why {@code persistence} declares an interface rather than depending on the browser.
  */
-@ApplicationModuleTest(BootstrapMode.DIRECT_DEPENDENCIES)
-@Import(PlayerModuleIntegrationTests.InMemoryStorage.class)
 class PlayerModuleIntegrationTests {
 
-	@TestConfiguration
-	static class InMemoryStorage {
-
-		@Bean
-		KeyValueStore keyValueStore() {
-			return new InMemoryKeyValueStore();
-		}
-
-	}
-
-	private final PlayerState player;
-
-	PlayerModuleIntegrationTests(PlayerState player) {
-		this.player = player;
-	}
+	private final PlayerState player = new PlayerState(new StationCatalogue(),
+			new PreferencesStore(new InMemoryKeyValueStore()));
 
 	@Test
 	void bootstrapsThePlayerModuleWithItsDeclaredDependencies() {
-		// Then the context refreshed and the module's beans are wired
+		// Then the graph wired and the module's collaborators respond
 		assertThat(this.player).isNotNull();
 		assertThat(this.player.station()).isNotNull();
 		assertThat(this.player.status()).isEqualTo(PlaybackStatus.IDLE);

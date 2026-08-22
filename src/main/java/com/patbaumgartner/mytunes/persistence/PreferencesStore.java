@@ -2,8 +2,6 @@ package com.patbaumgartner.mytunes.persistence;
 
 import java.util.Optional;
 
-import org.springframework.stereotype.Service;
-
 /**
  * Reads and writes {@link Preferences} through a {@link KeyValueStore}.
  * <p>
@@ -12,7 +10,6 @@ import org.springframework.stereotype.Service;
  * forward-incompatible change degrades to defaults instead of restoring a corrupt player
  * state. Nothing secret is ever stored: these are display and playback preferences only.
  */
-@Service
 public class PreferencesStore {
 
 	public static final int SCHEMA_VERSION = 1;

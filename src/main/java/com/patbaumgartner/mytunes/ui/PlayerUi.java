@@ -15,13 +15,11 @@ import com.patbaumgartner.mytunes.themes.Background;
 import com.patbaumgartner.mytunes.themes.BackgroundCatalogue;
 import org.graalvm.webimage.api.JSObject;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
 
 /**
  * Connects the player state machine to the browser: builds the view, translates user
  * gestures into state changes, and renders state back into the DOM and the audio element.
  */
-@Service
 public class PlayerUi {
 
 	private final Dom dom;

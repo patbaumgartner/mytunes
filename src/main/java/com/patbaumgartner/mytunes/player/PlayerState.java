@@ -7,7 +7,6 @@ import com.patbaumgartner.mytunes.persistence.Preferences;
 import com.patbaumgartner.mytunes.persistence.PreferencesStore;
 import com.patbaumgartner.mytunes.stations.Station;
 import com.patbaumgartner.mytunes.stations.StationCatalogue;
-import org.springframework.stereotype.Service;
 
 /**
  * The player state machine.
@@ -17,7 +16,6 @@ import org.springframework.stereotype.Service;
  * listeners; translating that into an audio element and pixels is the job of the
  * {@code ui} module.
  */
-@Service
 public class PlayerState {
 
 	private final StationCatalogue stations;

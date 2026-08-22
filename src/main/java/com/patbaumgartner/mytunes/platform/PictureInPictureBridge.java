@@ -4,7 +4,6 @@ import java.util.function.Consumer;
 
 import org.graalvm.webimage.api.JSError;
 import org.graalvm.webimage.api.JSObject;
-import org.springframework.stereotype.Service;
 
 /**
  * Opens a floating, always-on-top mini player through the Document Picture-in-Picture
@@ -23,7 +22,6 @@ import org.springframework.stereotype.Service;
  * outlive the browser process: no web application can keep a window after the browser is
  * closed.
  */
-@Service
 public class PictureInPictureBridge {
 
 	private final Dom dom;

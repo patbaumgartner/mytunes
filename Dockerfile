@@ -55,7 +55,7 @@ RUN chmod +x tools/install-webimage-api.sh && ./tools/install-webimage-api.sh
 RUN ./mvnw -B -q dependency:go-offline -Dmaven.test.skip=true || true
 
 COPY src/ src/
-RUN ./mvnw -B -Pnative native:compile -Dmaven.test.skip=true
+RUN ./mvnw -B native:compile -Dmaven.test.skip=true
 
 # A wasm-opt -Oz pass shrinks the module by a further ~12% on top of the -g removal. Only
 # features browsers actually ship are enabled; --all-features would emit experimental heap

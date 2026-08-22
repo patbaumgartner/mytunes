@@ -9,6 +9,15 @@ Nothing has been released yet; everything below describes what 1.0.0 will contai
 
 ## [Unreleased]
 
+### Changed (this branch: `without-spring-boot`)
+
+- Removed Spring Boot 4.1.1 and Spring Modulith 2.1.0; the object graph is wired by nine
+  constructor calls in `main()`. The Wasm module shrinks from 16,051,547 to 1,292,751 bytes
+  (12.4×), the `gzip -9` wire size from ~6.8 MB to 533,043 bytes, and in-browser startup from
+  ~137 ms to ~20 ms. Module boundaries formerly verified by Spring Modulith are re-expressed
+  as ArchUnit rules in `ModularityTests`, and the two `@TargetClass` substitutions
+  (`StackWalker`, `System.console()`) became unnecessary and were deleted.
+
 ### Added
 
 - The application: Spring Boot 4.1.1 + Spring Modulith 2.1.0 compiled to WebAssembly by GraalVM

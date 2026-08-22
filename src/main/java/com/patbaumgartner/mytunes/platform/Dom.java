@@ -3,13 +3,11 @@ package com.patbaumgartner.mytunes.platform;
 import java.util.function.Consumer;
 
 import org.graalvm.webimage.api.JSObject;
-import org.springframework.stereotype.Component;
 
 /**
  * DOM access expressed in Java. Every method delegates to {@link Js}, so no JavaScript is
  * written here; this is the vocabulary the {@code ui} module builds the interface from.
  */
-@Component
 public final class Dom {
 
 	private final JSObject document;

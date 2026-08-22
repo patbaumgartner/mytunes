@@ -88,7 +88,7 @@ class MyTunesBrowserTests {
 	}
 
 	@Test
-	void springBootStartsInsideTheBrowserAndBuildsTheInterface() throws IOException {
+	void javaStartsInsideTheBrowserAndBuildsTheInterface() throws IOException {
 		// Given
 		List<String> messages = new ArrayList<>();
 
@@ -97,7 +97,7 @@ class MyTunesBrowserTests {
 			Page page = open(context, messages);
 
 			// Then
-			assertThat(messages).anyMatch((line) -> line.contains("Spring Boot 4.1.1 started in the browser"));
+			assertThat(messages).anyMatch((line) -> line.contains("Java started in the browser"));
 			assertThat(messages).anyMatch((line) -> line.contains("interface ready"));
 			assertThat(page.textContent(".station-select__name")).isNotBlank();
 			Files.writeString(CONSOLE.resolve("mytunes-startup.log"), String.join("\n", messages));
@@ -241,14 +241,14 @@ class MyTunesBrowserTests {
 				.orElse("(not reported)");
 
 			StringBuilder diagnostics = new StringBuilder();
-			diagnostics.append("springStartup=").append(reported).append(System.lineSeparator());
+			diagnostics.append("startup=").append(reported).append(System.lineSeparator());
 			recordAssetSize(diagnostics, "mytunes.js.wasm");
 			recordAssetSize(diagnostics, "mytunes.js");
 			Files.writeString(CONSOLE.resolve("wasm-diagnostics.log"), diagnostics.toString());
 
-			// Then the module actually loaded and Spring reported its own startup
+			// Then the module actually loaded and reported its own startup
 			assertThat(page.getAttribute("#mytunes", "data-ready")).isEqualTo("true");
-			assertThat(reported).contains("Spring Boot");
+			assertThat(reported).contains("Java started in the browser");
 		}
 	}
 

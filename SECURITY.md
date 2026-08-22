@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-myTunes is a research project demonstrating Spring Boot compiled to WebAssembly. Only the
+myTunes is a research project demonstrating Java compiled to WebAssembly. Only the
 current state of `main` is supported.
 
 | Version | Supported |

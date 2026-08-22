@@ -3,30 +3,33 @@
 [![CI](https://github.com/patbaumgartner/mytunes/actions/workflows/ci.yml/badge.svg)](https://github.com/patbaumgartner/mytunes/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/patbaumgartner/mytunes/actions/workflows/codeql.yml/badge.svg)](https://github.com/patbaumgartner/mytunes/actions/workflows/codeql.yml)
 [![GitHub Pages](https://img.shields.io/github/deployments/patbaumgartner/mytunes/github-pages?label=pages&logo=github)](https://tunes.patbaumgartner.com/)
-[![Docker Image Size](https://img.shields.io/docker/image-size/patbaumgartner/mytunes/latest?logo=docker&label=image)](https://hub.docker.com/r/patbaumgartner/mytunes)
+[![Container image](https://img.shields.io/badge/image-59%20MB%20unpublished%2C%20built%20from%20this%20branch-2496ED?logo=docker&logoColor=white)](#with-and-without-spring)
 [![Java 25](https://img.shields.io/badge/Java-25-b07219?logo=openjdk&logoColor=white)](https://www.graalvm.org/)
-[![Spring Boot 4.1.1](https://img.shields.io/badge/Spring%20Boot-4.1.1-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![No framework](https://img.shields.io/badge/framework-none%2C%20plain%20Java-2ea44f)](#with-and-without-spring)
 [![WebAssembly](https://img.shields.io/badge/WebAssembly-GC%20%2B%20EH-654FF0?logo=webassembly&logoColor=white)](https://webassembly.org/)
 [![Zero JavaScript](https://img.shields.io/badge/hand--written%20JavaScript-0%20lines-2ea44f)](#the-zero-javascript-rule)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-**Live demo: <https://tunes.patbaumgartner.com/>** — deployed by CI from the exact
-image the browser tests just verified. (GitHub Pages serves no custom headers, so the CSP and
-caching policy documented below apply to the nginx container, which remains the reference
-deployment.)
+**Live demo: <https://tunes.patbaumgartner.com/>** — deployed by CI from `main`, so it runs the
+Spring build; this branch's variant is not deployed anywhere. (GitHub Pages serves no custom
+headers, so the CSP and caching policy documented below apply to the nginx container, which
+remains the reference deployment.)
 
-A radio player inspired by [DevTunes FM](https://radio.madza.dev/), built to answer one question:
+A radio player inspired by [DevTunes FM](https://radio.madza.dev/). The `main` branch answers one
+question:
 
 > Can a complete Spring Boot application — the framework, the domain, **and the user interface** —
 > be compiled from Java to WebAssembly and run entirely inside a browser, with no server?
 
-**Yes.** Spring Boot 4.1.1 and Spring Modulith 2.1.0 start in the browser tab in under 200 ms with
-22 beans, build the interface against the live DOM, play audio, and persist preferences. The
-container that serves it holds no JVM and no jar.
+**This branch is the control experiment.** It is the same application with Spring Boot and Spring
+Modulith removed: the object graph is wired by nine hand-written constructor calls in `main()`.
+Same modules, same interface, same tests, same zero-JavaScript rule — which makes the two branches
+a direct measurement of what the framework costs inside a Wasm module. The numbers are in
+[With and without Spring](#with-and-without-spring).
 
 ```
-[mytunes] Spring Boot 4.1.1 started in the browser in 137ms with 22 beans
+[mytunes] Java started in the browser in 20ms, wired by hand without a framework
 [mytunes] interface ready
 ```
 
@@ -47,6 +50,7 @@ SMIL day-night cycle.
 ## Contents
 
 - [What this is](#what-this-is) · [Why Java to WebAssembly](#why-java-to-webassembly)
+- [With and without Spring](#with-and-without-spring)
 - [Architecture](#architecture) · [Modules](#modules) · [The zero-JavaScript rule](#the-zero-javascript-rule)
 - [Prerequisites](#prerequisites) · [Build from a clean clone](#build-from-a-clean-clone) · [Docker](#docker)
 - [Tests](#tests)
@@ -70,12 +74,40 @@ There is no backend. Nothing is rendered on a server, and no API is called.
 
 The interesting part is not "compile Java to Wasm" — several projects do that. It is that
 **WebAssembly has no access to the DOM**, so a browser UI written in Java needs an interop layer,
-and the usual answer is to hand-write JavaScript for it. This project set out to avoid that, and to
-find out whether a framework as reflection-heavy and lifecycle-heavy as Spring Boot survives the
-closed-world, ahead-of-time, single-threaded environment a Wasm module runs in.
+and the usual answer is to hand-write JavaScript for it. This project set out to avoid that. The
+`main` branch additionally asks whether a framework as reflection-heavy and lifecycle-heavy as
+Spring Boot survives the closed-world, ahead-of-time, single-threaded environment a Wasm module
+runs in; this branch is the control run without the framework.
 
-Six specific adaptations were required to get there, each documented at its call site and
-summarised under [GraalVM Web Image: status and limits](#graalvm-web-image-status-and-limits).
+The adaptations that remain are documented at their call sites and summarised under
+[GraalVM Web Image: status and limits](#graalvm-web-image-status-and-limits).
+
+## With and without Spring
+
+This branch removes Spring Boot 4.1.1 and Spring Modulith 2.1.0 from `main` and replaces the
+application context with nine constructor calls in `main()`. Nothing else changed: same modules,
+same interface, same tests, same pipeline. Both variants are built by the same pinned toolchain
+(Oracle GraalVM 25.0.4, Binaryen `version_132`, `-Os`, a `wasm-opt -Oz` pass, `gzip -9`), so the
+difference is the framework and nothing but the framework.
+
+| Metric | `main` (Spring Boot + Modulith) | `without-spring-boot` | Δ |
+| --- | --- | --- | --- |
+| `mytunes.js.wasm` | 16,051,547 bytes (~16.1 MB) | 1,292,751 bytes (~1.3 MB) | **12.4× smaller** |
+| `mytunes.js.wasm` on the wire (`gzip -9`) | ~6.8 MB | 533,043 bytes (~0.53 MB) | **~13× smaller** |
+| Generated loader `mytunes.js` | 96,732 bytes | 96,217 bytes | unchanged |
+| Container image (uncompressed) | ~80 MB | ~59 MB | **21 MB smaller** |
+| In-browser startup (instantiated module → wired interface) | 137 ms, 22 beans | ~20 ms | **~7× faster** |
+
+Docker Hub and the live demo are published by CI from `main` only, so the
+[`patbaumgartner/mytunes`](https://hub.docker.com/r/patbaumgartner/mytunes) image (and its size
+badge) always show the Spring build; this branch's image exists only where you build it.
+
+What the numbers say, plainly: the framework accounted for roughly **92% of the module** and most
+of its startup time. Two `@TargetClass` substitutions (`StackWalker`, `System.console()`) were
+deleted along with it — they existed only because Spring Boot's startup path touched APIs Web Image
+cannot support. What was given up: component scanning, dependency injection, the Modulith verifier
+(re-expressed here as plain ArchUnit rules in `ModularityTests`) and Spring's configuration model —
+none of which this application used at runtime beyond wiring those nine objects.
 
 ## Architecture
 
@@ -87,19 +119,18 @@ Docker (nginx, unprivileged)
         ├── backgrounds/, icons/, audio/
         ├── mytunes.js          GraalVM-generated loader  (the only script the page loads)
         └── mytunes.js.wasm     the entire application
-                 ├── Spring Boot 4.1.1
-                 ├── Spring Modulith 2.1.0
                  ├── domain: stations, player, persistence, themes
                  └── browser: DOM, audio, localStorage, Media Session, Picture-in-Picture
 ```
 
 The browser downloads the module, the generated loader instantiates it and calls `main()`, and
-`main()` runs `SpringApplication.run(...)` inside the tab.
+`main()` wires the object graph by hand inside the tab — nine constructor calls, no container.
 
 ## Modules
 
-Spring Modulith boundaries are declared in each `package-info.java` and verified by
-`ModularityTests`. The rule that matters most is that **only `platform` may touch the browser**,
+Module boundaries are enforced by ArchUnit rules in `ModularityTests` — the same allowed
+dependencies Spring Modulith verified from the `package-info` declarations on `main`. The rule
+that matters most is that **only `platform` may touch the browser**,
 which is what keeps the domain unit-testable on a plain JVM even though the product only ever runs
 as WebAssembly.
 
@@ -154,10 +185,10 @@ export JAVA_HOME=/path/to/graalvm-jdk-25.0.4
 export PATH="$JAVA_HOME/bin:/path/to/binaryen/bin:$PATH"
 
 # One-time bootstrap. Repackages GraalVM's browser interop module as a Maven artifact so the
-# whole build and Spring Boot's AOT step share one compiler configuration.
+# whole build shares one compiler configuration.
 ./tools/install-webimage-api.sh
 
-./mvnw -B -Pnative native:compile      # produces target/mytunes.js and target/mytunes.js.wasm
+./mvnw -B native:compile      # produces target/mytunes.js and target/mytunes.js.wasm
 
 # Assemble the site
 mkdir -p target/site && cp -r src/main/web/. target/site/ \
@@ -169,13 +200,12 @@ self-hosted station. Their output is committed, so a normal build does not need 
 
 ## Docker
 
-The image needs no local JVM or GraalVM. CI publishes every tested main build to Docker Hub as
+The image needs no local JVM or GraalVM. CI publishes every tested **main** build to Docker Hub as
 [`patbaumgartner/mytunes`](https://hub.docker.com/r/patbaumgartner/mytunes) (`latest` plus a
-`sha-` tag per commit).
+`sha-` tag per commit) — that published image is the Spring build. This branch is never
+published, so to run the framework-free variant, build it from this checkout:
 
 ```sh
-docker run -d --name mytunes -p 8099:8080 patbaumgartner/mytunes:latest
-# …or build it yourself
 docker build -t mytunes:latest .
 docker run -d --name mytunes -p 8099:8080 mytunes:latest
 # http://localhost:8099
@@ -203,8 +233,8 @@ cannot is verified in one.
 | Layer | Covers |
 | --- | --- |
 | Unit | Player state machine, versioned persistence, station and background catalogues |
-| Spring context | `PlayerModuleIntegrationTests` refreshes a real context for the `player` module and its declared dependencies with `@ApplicationModuleTest`, proving the module boundaries are sufficient off-browser |
-| Modularity | `ModularityTests` — Spring Modulith `detectViolations()` |
+| Wiring | `PlayerModuleIntegrationTests` wires the `player` module with its real collaborators exactly as `main()` does, proving the graph composes off-browser |
+| Modularity | `ModularityTests` — ArchUnit layer rules and a cycle check encoding the allowed dependencies per module |
 | Architecture | `ArchitectureTests` — Taikai conventions over the authored classes |
 | Constraint | `NoHandwrittenJavaScriptTests` — the zero-JavaScript rule |
 
@@ -236,13 +266,13 @@ Module size and startup timing are recorded to `target/diagnostics/console/wasm-
 on every browser run:
 
 ```
-springStartup=[mytunes] Spring Boot 4.1.1 started in the browser in 137ms with 22 beans
-mytunes.js.wasm=16051547 bytes
-mytunes.js=96732 bytes
+startup=[log] [mytunes] Java started in the browser in 20ms, wired by hand without a framework
+mytunes.js.wasm=1292751 bytes
+mytunes.js=96217 bytes
 ```
 
-Coverage note, stated plainly: JaCoCo instruments JVM bytecode, and the `platform`, `ui` and
-`wasm` classes execute only as WebAssembly where no Java agent exists, so they are excluded from
+Coverage note, stated plainly: JaCoCo instruments JVM bytecode, and the `platform` and `ui`
+classes execute only as WebAssembly where no Java agent exists, so they are excluded from
 instrumentation and verified in a real browser instead. The domain they delegate to (stations,
 player, persistence, themes) is fully unit tested on the JVM.
 
@@ -330,13 +360,14 @@ served from this repository.
 Verified in Chromium via Playwright. Requires WebAssembly with GC and exception handling, so a
 current Chromium, Firefox or Safari. Node 22–24 needs `--experimental-wasm-exnref`.
 
-The module is ~16 MB uncompressed: release builds omit `-g`, compile with `-Os`, keep
-snakeyaml and the Modulith annotation processor off the runtime classpath, and the container
-build runs a `wasm-opt -Oz` pass (down from ~30 MB with debug annotations; rebuild with
-`-Pwasm-debug` when hunting a browser-side crash). On the wire it is **~6.8 MB**: the image
-build precompresses every compressible asset at `gzip -9` and nginx serves the `.gz` bytes
-directly (`gzip_static`), marked immutable. GitHub Pages applies its own gzip (~6.9 MB).
-Startup from navigation to a rendered interface is under about a second locally.
+The module is **~1.3 MB uncompressed** (1,292,751 bytes): release builds omit `-g`, compile with
+`-Os`, and the container build runs a `wasm-opt -Oz` pass (rebuild with `-Pwasm-debug` when
+hunting a browser-side crash). On the wire it is **~0.53 MB**: the image build precompresses
+every compressible asset at `gzip -9` and nginx serves the `.gz` bytes directly (`gzip_static`),
+marked immutable. GitHub Pages applies its own gzip. With Spring Boot and Spring Modulith
+compiled in, the same pipeline produces a ~16 MB module (~6.8 MB on the wire) — the full
+comparison is under [With and without Spring](#with-and-without-spring). Startup from navigation
+to a rendered interface is effectively instant locally.
 
 ## Mobile
 
@@ -370,14 +401,13 @@ application, and no amount of browser API makes it possible.
 
 Web Image is **experimental**. Limits that shaped this code, all found by building and running:
 
-1. **Single-threaded.** No `Thread`, no `ScheduledExecutorService`, no `@Scheduled`. Spring Boot's
-   shutdown hook is disabled and `spring-modulith-moments` is excluded, because its cron-scheduled
-   passage-of-time events force a worker thread.
-2. **`StackWalker` always throws.** `SpringApplication.deduceMainApplicationClass()` walks the stack,
-   so it is substituted to read `primarySources` instead. log4j's `StackLocator` does too, so
-   `spring-boot-starter-logging` is excluded.
-3. **`java.io.Console` cannot link.** `System.console()` is substituted to return `null`, which is
-   the specified value when there is no terminal.
+1. **Single-threaded.** No `Thread`, no `ScheduledExecutorService`, no scheduling of any kind.
+2. **`StackWalker` always throws.** On `main` this forces a substitution because Spring Boot's
+   `deduceMainApplicationClass()` walks the stack; without Spring nothing walks the stack and the
+   substitution is deleted.
+3. **`java.io.Console` cannot link.** On `main` Spring Boot's logging setup reaches it, needing a
+   `System.console()` substitution; without Spring nothing touches it and the substitution is
+   deleted.
 4. **`@JS.Import`, `@JS.Export` and `JSObject` subclasses are unimplemented** in shipping releases.
 5. **Java stack traces are empty inside Wasm.** Diagnosis needs `-g` plus a raised
    `Error.stackTraceLimit` to read named Wasm symbols.

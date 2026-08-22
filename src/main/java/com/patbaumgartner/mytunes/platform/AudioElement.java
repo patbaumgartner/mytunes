@@ -3,7 +3,6 @@ package com.patbaumgartner.mytunes.platform;
 import java.util.function.Consumer;
 
 import org.graalvm.webimage.api.JSObject;
-import org.springframework.stereotype.Component;
 
 /**
  * An HTML audio element created and driven entirely from Java.
@@ -13,7 +12,6 @@ import org.springframework.stereotype.Component;
  * swallowed, because "the browser refused to start audio" is a state the interface must
  * be able to show.
  */
-@Component
 public final class AudioElement {
 
 	private final JSObject element;

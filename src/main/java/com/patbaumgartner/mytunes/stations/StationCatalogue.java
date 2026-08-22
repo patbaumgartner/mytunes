@@ -3,8 +3,6 @@ package com.patbaumgartner.mytunes.stations;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.stereotype.Service;
-
 /**
  * The station catalogue: eight categories, each holding several channels.
  * <p>
@@ -18,7 +16,6 @@ import org.springframework.stereotype.Service;
  * playback can always be demonstrated in every category, offline, with no third-party
  * dependency and no licensing question.
  */
-@Service
 public class StationCatalogue {
 
 	private static final String GENERATED = "Original loop generated for myTunes by tools/generate-audio.py";

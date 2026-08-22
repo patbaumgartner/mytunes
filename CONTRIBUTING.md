@@ -30,7 +30,7 @@ export PATH="$JAVA_HOME/bin:/path/to/binaryen/bin:$PATH"
 ./tools/install-webimage-api.sh
 
 ./mvnw -B test                        # JVM suite — needs no browser and no Wasm build
-./mvnw -B -Pnative native:compile     # produce target/mytunes.js + target/mytunes.js.wasm
+./mvnw -B native:compile     # produce target/mytunes.js + target/mytunes.js.wasm
 
 # Assemble the site and run the authoritative browser tests
 mkdir -p target/site && cp -r src/main/web/. target/site/ \

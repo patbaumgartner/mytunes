@@ -6,7 +6,6 @@ import com.patbaumgartner.mytunes.persistence.KeyValueStore;
 import org.graalvm.webimage.api.JSError;
 import org.graalvm.webimage.api.JSObject;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
 
 /**
  * Backs the application's key/value store with the browser's {@code localStorage}.
@@ -16,7 +15,6 @@ import org.springframework.stereotype.Service;
  * absent value or a skipped write, because losing a volume preference must never stop the
  * radio from playing.
  */
-@Service
 public class LocalStorageKeyValueStore implements KeyValueStore {
 
 	private final @Nullable JSObject storage;

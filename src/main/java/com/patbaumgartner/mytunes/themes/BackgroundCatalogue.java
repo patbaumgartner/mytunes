@@ -3,8 +3,6 @@ package com.patbaumgartner.mytunes.themes;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.stereotype.Service;
-
 /**
  * The background catalogue.
  * <p>
@@ -14,7 +12,6 @@ import org.springframework.stereotype.Service;
  * licence, which removes the attribution and redistribution question entirely rather than
  * deferring it.
  */
-@Service
 public class BackgroundCatalogue {
 
 	private static final List<Background> BACKGROUNDS = List.of(

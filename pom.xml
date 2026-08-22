@@ -4,49 +4,40 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>4.1.1</version>
-    <relativePath></relativePath>
-  </parent>
-
   <groupId>com.patbaumgartner</groupId>
   <artifactId>mytunes</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>myTunes</name>
-  <description>A DevTunes FM inspired radio player whose entire application, including the Spring Boot and
-    Spring Modulith runtime and the browser user interface, is compiled from Java to WebAssembly
-    by GraalVM Web Image and executes client side. There is no server side Spring application.</description>
+  <description>A DevTunes FM inspired radio player whose entire application, including the browser
+    user interface, is compiled from Java to WebAssembly by GraalVM Web Image and executes client
+    side. Plain Java without an application framework; there is no server side application.</description>
 
   <properties>
+    <assertj.version>3.27.7</assertj.version>
     <graalvm.version>25.0.4</graalvm.version>
     <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
     <java.version>25</java.version>
     <jspecify.version>1.0.1</jspecify.version>
+    <junit.version>6.0.3</junit.version>
+    <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
     <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
-    <!--
-      Kept as a property because spring-boot-maven-plugin's process-aot goal reads it when it
-      compiles the generated AOT sources. The maven-compiler-plugin configuration below overrides
-      the flag for this project's own sources only.
-    -->
     <maven.compiler.release>25</maven.compiler.release>
+    <native-maven-plugin.version>1.1.8</native-maven-plugin.version>
     <playwright.version>1.62.0</playwright.version>
     <project.build.outputTimestamp>2026-01-01T00:00:00Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <spring-javaformat-maven-plugin.version>0.0.48</spring-javaformat-maven-plugin.version>
-    <spring-modulith.version>2.1.0</spring-modulith.version>
     <taikai.version>1.66.0</taikai.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.springframework.modulith</groupId>
-        <artifactId>spring-modulith-bom</artifactId>
-        <version>${spring-modulith.version}</version>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${junit.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -55,66 +46,16 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter</artifactId>
-      <exclusions>
-        <!--
-          log4j-api's StackLocator resolves callers through StackWalker, which Web Image
-          substitutes with an unconditional UnsupportedOperationException. Spring logs through
-          spring-jcl, so this bridge is dead weight in a browser image.
-        -->
-        <exclusion>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-starter-logging</artifactId>
-        </exclusion>
-        <!--
-          Configuration is a three-line application.properties; the YAML parser would be
-          compiled into the Wasm module for nothing. Spring Boot supports its absence.
-        -->
-        <exclusion>
-          <groupId>org.yaml</groupId>
-          <artifactId>snakeyaml</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.modulith</groupId>
-      <artifactId>spring-modulith-starter-core</artifactId>
-      <exclusions>
-        <!--
-          Moments publishes passage-of-time events from cron Scheduled methods, forcing a
-          ScheduledThreadPoolExecutor to start a worker thread. Web Image is single threaded,
-          so that throws IllegalThreadStateException during context refresh.
-        -->
-        <exclusion>
-          <groupId>org.springframework.modulith</groupId>
-          <artifactId>spring-modulith-moments</artifactId>
-        </exclusion>
-        <!-- An annotation processor; it has no business on the runtime classpath. -->
-        <exclusion>
-          <groupId>org.springframework.modulith</groupId>
-          <artifactId>spring-modulith-apt</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
       <groupId>org.jspecify</groupId>
       <artifactId>jspecify</artifactId>
       <version>${jspecify.version}</version>
     </dependency>
 
     <!--
-      Supplies the Native Image substitution annotations. The browser interop API itself
-      (org.graalvm.webimage.api) has no Maven coordinates and is added with add-modules below.
-    -->
-    <!--
       The Web Image browser interop API. It ships only as the GraalVM JDK module
       org.graalvm.webimage.api and has no Maven coordinates, so tools/install-webimage-api.sh
       repackages it into the local repository. Consuming it from the classpath rather than with
-      javac's add-modules is what lets this build keep a single release-based compiler
-      configuration that Spring Boot's AOT step can reuse.
+      javac's add-modules is what keeps a single release-based compiler configuration.
     -->
     <dependency>
       <groupId>org.graalvm.webimage</groupId>
@@ -124,32 +65,15 @@
     </dependency>
 
     <dependency>
-      <groupId>org.graalvm.nativeimage</groupId>
-      <artifactId>svm</artifactId>
-      <version>${graalvm.version}</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <!--
-      Nothing here uses a #{...} expression, but Spring links SpEL types unconditionally:
-      the AOT processor references ParserContext and context refresh references BeanResolver,
-      so the jar must be on the runtime classpath. Provided scope crashed the module at
-      startup in the browser with NoClassDefFoundError. spring.properties still sets
-      spring.spel.ignore=true, which keeps the parser machinery out of the reachable set.
-    -->
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-expression</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
-      <groupId>org.springframework.modulith</groupId>
-      <artifactId>spring-modulith-starter-test</artifactId>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>${assertj.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -188,20 +112,21 @@
           <excludes>
             <exclude>com/patbaumgartner/mytunes/platform/**</exclude>
             <exclude>com/patbaumgartner/mytunes/ui/**</exclude>
-            <exclude>com/patbaumgartner/mytunes/wasm/**</exclude>
             <exclude>com/patbaumgartner/mytunes/MyTunesApplication.class</exclude>
           </excludes>
         </configuration>
       </plugin>
 
       <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven-compiler-plugin.version}</version>
       </plugin>
 
       <plugin>
         <groupId>org.graalvm.buildtools</groupId>
         <artifactId>native-maven-plugin</artifactId>
+        <version>${native-maven-plugin.version}</version>
         <configuration>
           <imageName>mytunes</imageName>
           <mainClass>com.patbaumgartner.mytunes.MyTunesApplication</mainClass>

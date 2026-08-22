@@ -4,6 +4,3 @@
  * JVM.
  */
 @org.jspecify.annotations.NullMarked
-@org.springframework.modulith.ApplicationModule(displayName = "Platform / Browser",
-		allowedDependencies = { "persistence" })
-package com.patbaumgartner.mytunes.platform;

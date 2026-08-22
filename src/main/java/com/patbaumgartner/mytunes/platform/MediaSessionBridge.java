@@ -4,7 +4,6 @@ import java.util.function.Consumer;
 
 import org.graalvm.webimage.api.JSObject;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
 
 /**
  * Publishes playback metadata and transport actions to the operating system through the
@@ -15,7 +14,6 @@ import org.springframework.stereotype.Service;
  * methods do nothing, so an unsupported browser loses the operating-system integration
  * and keeps the player.
  */
-@Service
 public class MediaSessionBridge {
 
 	private final @Nullable JSObject mediaSession;
