@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # graalvm.version must match the Oracle GraalVM JDK pinned in the Dockerfile and CI
+      # (URL + SHA-256); Maven Central sometimes carries artifact-only patch versions with no
+      # corresponding JDK release. Bumped manually in lockstep across all four places.
+      - dependency-name: "org.graalvm.*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
