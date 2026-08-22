@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.1.1</version>
+    <relativePath></relativePath>
+  </parent>
+
+  <groupId>com.patbaumgartner</groupId>
+  <artifactId>mytunes</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>myTunes</name>
+  <description>A DevTunes FM inspired radio player whose entire application, including the Spring Boot and
+    Spring Modulith runtime and the browser user interface, is compiled from Java to WebAssembly
+    by GraalVM Web Image and executes client side. There is no server side Spring application.</description>
+
+  <properties>
+    <graalvm.version>25.0.4</graalvm.version>
+    <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
+    <java.version>25</java.version>
+    <jspecify.version>1.0.1</jspecify.version>
+    <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
+    <!--
+      Kept as a property because spring-boot-maven-plugin's process-aot goal reads it when it
+      compiles the generated AOT sources. The maven-compiler-plugin configuration below overrides
+      the flag for this project's own sources only.
+    -->
+    <maven.compiler.release>25</maven.compiler.release>
+    <playwright.version>1.62.0</playwright.version>
+    <project.build.outputTimestamp>2026-01-01T00:00:00Z</project.build.outputTimestamp>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <spring-javaformat-maven-plugin.version>0.0.48</spring-javaformat-maven-plugin.version>
+    <spring-modulith.version>2.1.0</spring-modulith.version>
+    <taikai.version>1.66.0</taikai.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.modulith</groupId>
+        <artifactId>spring-modulith-bom</artifactId>
+        <version>${spring-modulith.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter</artifactId>
+      <exclusions>
+        <!--
+          log4j-api's StackLocator resolves callers through StackWalker, which Web Image
+          substitutes with an unconditional UnsupportedOperationException. Spring logs through
+          spring-jcl, so this bridge is dead weight in a browser image.
+        -->
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+        <!--
+          Configuration is a three-line application.properties; the YAML parser would be
+          compiled into the Wasm module for nothing. Spring Boot supports its absence.
+        -->
+        <exclusion>
+          <groupId>org.yaml</groupId>
+          <artifactId>snakeyaml</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.modulith</groupId>
+      <artifactId>spring-modulith-starter-core</artifactId>
+      <exclusions>
+        <!--
+          Moments publishes passage-of-time events from cron Scheduled methods, forcing a
+          ScheduledThreadPoolExecutor to start a worker thread. Web Image is single threaded,
+          so that throws IllegalThreadStateException during context refresh.
+        -->
+        <exclusion>
+          <groupId>org.springframework.modulith</groupId>
+          <artifactId>spring-modulith-moments</artifactId>
+        </exclusion>
+        <!-- An annotation processor; it has no business on the runtime classpath. -->
+        <exclusion>
+          <groupId>org.springframework.modulith</groupId>
+          <artifactId>spring-modulith-apt</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <version>${jspecify.version}</version>
+    </dependency>
+
+    <!--
+      Supplies the Native Image substitution annotations. The browser interop API itself
+      (org.graalvm.webimage.api) has no Maven coordinates and is added with add-modules below.
+    -->
+    <!--
+      The Web Image browser interop API. It ships only as the GraalVM JDK module
+      org.graalvm.webimage.api and has no Maven coordinates, so tools/install-webimage-api.sh
+      repackages it into the local repository. Consuming it from the classpath rather than with
+      javac's add-modules is what lets this build keep a single release-based compiler
+      configuration that Spring Boot's AOT step can reuse.
+    -->
+    <dependency>
+      <groupId>org.graalvm.webimage</groupId>
+      <artifactId>webimage-api</artifactId>
+      <version>${graalvm.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.graalvm.nativeimage</groupId>
+      <artifactId>svm</artifactId>
+      <version>${graalvm.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!--
+      Nothing here uses a #{...} expression, but Spring links SpEL types unconditionally:
+      the AOT processor references ParserContext and context refresh references BeanResolver,
+      so the jar must be on the runtime classpath. Provided scope crashed the module at
+      startup in the browser with NoClassDefFoundError. spring.properties still sets
+      spring.spel.ignore=true, which keeps the parser machinery out of the reachable set.
+    -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-expression</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.modulith</groupId>
+      <artifactId>spring-modulith-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.microsoft.playwright</groupId>
+      <artifactId>playwright</artifactId>
+      <version>${playwright.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.enofex</groupId>
+      <artifactId>taikai</artifactId>
+      <version>${taikai.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco-maven-plugin.version}</version>
+        <configuration>
+          <!--
+            These classes exist only inside the browser. They hold a live DOM node, an
+            HTMLAudioElement or navigator.mediaSession, so they cannot be instantiated on a JVM,
+            and JaCoCo can never observe them because the code runs as WebAssembly where no Java
+            agent exists. Instrumenting them would report 0% for code that is in fact exercised
+            by MyTunesBrowserTests against a real browser.
+
+            The domain they delegate to (stations, player, persistence, themes) is deliberately
+            not excluded and is fully unit tested on the JVM.
+          -->
+          <excludes>
+            <exclude>com/patbaumgartner/mytunes/platform/**</exclude>
+            <exclude>com/patbaumgartner/mytunes/ui/**</exclude>
+            <exclude>com/patbaumgartner/mytunes/wasm/**</exclude>
+            <exclude>com/patbaumgartner/mytunes/MyTunesApplication.class</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>org.graalvm.buildtools</groupId>
+        <artifactId>native-maven-plugin</artifactId>
+        <configuration>
+          <imageName>mytunes</imageName>
+          <mainClass>com.patbaumgartner.mytunes.MyTunesApplication</mainClass>
+          <buildArgs>
+            <buildArg>--tool:svm-wasm</buildArg>
+            <buildArg>-Os</buildArg>
+          </buildArgs>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>io.spring.javaformat</groupId>
+        <artifactId>spring-javaformat-maven-plugin</artifactId>
+        <version>${spring-javaformat-maven-plugin.version}</version>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven-surefire-plugin.version}</version>
+        <configuration>
+          <redirectTestOutputToFile>true</redirectTestOutputToFile>
+          <excludes>
+            <!-- Browser tests need a built Wasm image and a served site; they run in verify. -->
+            <exclude>**/*BrowserTests.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <url>https://github.com/patbaumgartner/mytunes</url>
+
+  <licenses>
+    <license>
+      <name>Apache-2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>patbaumgartner</id>
+      <name>Patrick Baumgartner</name>
+      <url>https://github.com/patbaumgartner</url>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/patbaumgartner/mytunes.git</connection>
+    <developerConnection>scm:git:git@github.com:patbaumgartner/mytunes.git</developerConnection>
+    <url>https://github.com/patbaumgartner/mytunes</url>
+  </scm>
+
+  <profiles>
+    <!--
+      Java stack traces are empty inside Wasm, so diagnosing a browser-side failure needs the
+      -g debug annotations plus a raised Error.stackTraceLimit. Release builds omit -g because
+      it roughly doubles the module size; opt in with -Pwasm-debug when hunting a crash.
+    -->
+    <profile>
+      <id>wasm-debug</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.graalvm.buildtools</groupId>
+            <artifactId>native-maven-plugin</artifactId>
+            <configuration>
+              <buildArgs combine.children="append">
+                <buildArg>-g</buildArg>
+              </buildArgs>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

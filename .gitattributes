@@ -1,0 +1,9 @@
+* text=auto eol=lf
+
+*.cmd text eol=crlf
+
+mvnw text eol=lf
+*.sh text eol=lf
+
+*.png binary
+*.mp3 binary
