@@ -16,6 +16,9 @@ updates:
       - dependency-name: "org.graalvm.*"
 
   - package-ecosystem: github-actions
+    groups:
+      codeql-action:
+        patterns: ["github/codeql-action*"]
     directory: /
     schedule:
       interval: weekly
