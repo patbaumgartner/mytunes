@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>4.1.1</version>
+    <version>4.1.2</version>
     <relativePath></relativePath>
   </parent>
 
@@ -26,19 +26,19 @@
     <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
     <java.version>25</java.version>
     <jspecify.version>1.0.1</jspecify.version>
-    <maven-surefire-plugin.version>3.6.0</maven-surefire-plugin.version>
+    <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
     <!--
       Kept as a property because spring-boot-maven-plugin's process-aot goal reads it when it
       compiles the generated AOT sources. The maven-compiler-plugin configuration below overrides
       the flag for this project's own sources only.
     -->
     <maven.compiler.release>25</maven.compiler.release>
-    <playwright.version>1.63.0</playwright.version>
+    <playwright.version>1.64.0</playwright.version>
     <project.build.outputTimestamp>2026-01-01T00:00:00Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <spring-javaformat-maven-plugin.version>0.0.48</spring-javaformat-maven-plugin.version>
-    <spring-modulith.version>2.1.1</spring-modulith.version>
-    <taikai.version>2.0.0</taikai.version>
+    <spring-modulith.version>2.1.2</spring-modulith.version>
+    <taikai.version>2.3.0</taikai.version>
   </properties>
 
   <dependencyManagement>
