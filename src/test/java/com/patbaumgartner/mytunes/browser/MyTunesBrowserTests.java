@@ -97,7 +97,8 @@ class MyTunesBrowserTests {
 			Page page = open(context, messages);
 
 			// Then
-			assertThat(messages).anyMatch((line) -> line.contains("Spring Boot 4.1.1 started in the browser"));
+			// The app reports its own Spring Boot version, so do not pin it here.
+			assertThat(messages).anyMatch((line) -> line.matches(".*Spring Boot .* started in the browser in .*"));
 			assertThat(messages).anyMatch((line) -> line.contains("interface ready"));
 			assertThat(page.textContent(".station-select__name")).isNotBlank();
 			Files.writeString(CONSOLE.resolve("mytunes-startup.log"), String.join("\n", messages));
