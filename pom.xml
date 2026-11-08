@@ -38,7 +38,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <spring-javaformat-maven-plugin.version>0.0.48</spring-javaformat-maven-plugin.version>
     <spring-modulith.version>2.1.2</spring-modulith.version>
-    <taikai.version>2.7.0</taikai.version>
+    <taikai.version>2.8.0</taikai.version>
   </properties>
 
   <dependencyManagement>
