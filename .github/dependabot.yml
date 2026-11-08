@@ -18,6 +18,9 @@ updates:
     codeql-action:
       patterns:
       - github/codeql-action*
+    multi-step-actions:
+      patterns:
+      - github/codeql-action/*
   directory: /
   schedule:
     interval: weekly
@@ -29,7 +32,3 @@ updates:
     interval: weekly
     day: monday
   open-pull-requests-limit: 5
-groups:
-  multi-step-actions:
-    patterns:
-    - github/codeql-action/*
