@@ -33,7 +33,7 @@
       the flag for this project's own sources only.
     -->
     <maven.compiler.release>25</maven.compiler.release>
-    <playwright.version>1.64.0</playwright.version>
+    <playwright.version>1.65.0</playwright.version>
     <project.build.outputTimestamp>2026-01-01T00:00:00Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <spring-javaformat-maven-plugin.version>0.0.48</spring-javaformat-maven-plugin.version>
