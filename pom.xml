@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>4.1.2</version>
+    <version>4.2.0</version>
     <relativePath></relativePath>
   </parent>
 
@@ -33,11 +33,11 @@
       the flag for this project's own sources only.
     -->
     <maven.compiler.release>25</maven.compiler.release>
-    <playwright.version>1.65.0</playwright.version>
+    <playwright.version>1.65.1</playwright.version>
     <project.build.outputTimestamp>2026-01-01T00:00:00Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <spring-javaformat-maven-plugin.version>0.0.48</spring-javaformat-maven-plugin.version>
-    <spring-modulith.version>2.1.2</spring-modulith.version>
+    <spring-modulith.version>2.2.0</spring-modulith.version>
     <taikai.version>2.8.0</taikai.version>
   </properties>
 
